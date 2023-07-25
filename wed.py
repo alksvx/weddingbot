@@ -7,13 +7,14 @@ bot = telebot.TeleBot('')
 
 
 @bot.message_handler(commands=['start'])
-def starter(message):
-    user_id, first_name, last_name = message.from_user.username, message.from_user.first_name, message.from_user.last_name
+def starter(message): #функция начала после команды \start
+    user_id, first_name, last_name = message.from_user.username, message.from_user.first_name, message.from_user.last_name #Сбор данных пользователя в переменные
     bot.send_message(message.chat.id,
                      f'Привет, {first_name} {last_name}!\n Мы будем очень рады видеть тебя на нашей свадьбе✨')
-    pic = open('invitation.png', 'rb')
+    pic = open('', 'rb') 
     time.sleep(1)
     bot.send_photo(message.chat.id, pic)
+    #кнопки согласия приду или не приду
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("Приду👍")
     markup.row(btn1)
@@ -27,10 +28,9 @@ def starter(message):
 
 
 def on_click(message):
-
-
+    # ЗАПОЛНЯЕМ таблицу в бд acception + кнопки выбора напитков
     if message.text == 'Приду👍':
-        # ЗАПОЛНЯЕМ БД ACCEPTION
+        
         user_id, first_name, last_name = message.from_user.username, message.from_user.first_name, message.from_user.last_name
         conn = sqlite3.connect('wed.sql')
         cur = conn.cursor()
@@ -39,15 +39,15 @@ def on_click(message):
                     (user_id, first_name, last_name, presence))
         conn.commit()
         poll_drinks = types.ReplyKeyboardMarkup()
-        wine = types.KeyboardButton("Белое/красное вино")  # добавить тег в БД
+        wine = types.KeyboardButton("Белое/красное вино")  
         poll_drinks.row(wine)
-        vodka = types.KeyboardButton("Водка")  # добавить тег в БД
+        vodka = types.KeyboardButton("Водка")  
         poll_drinks.row(vodka)
-        cognac = types.KeyboardButton("Коньяк")  # добавить тег в БД
+        cognac = types.KeyboardButton("Коньяк")  
         poll_drinks.row(cognac)
-        whiskey = types.KeyboardButton("Виски")  # добавить тег в БД
+        whiskey = types.KeyboardButton("Виски") 
         poll_drinks.row(whiskey)
-        alcohol_free = types.KeyboardButton("Безалкогольные напитки")  # добавить тег в БД
+        alcohol_free = types.KeyboardButton("Безалкогольные напитки")  
         poll_drinks.row(alcohol_free)
         bot.send_message(message.chat.id,
                          'Мы очень рады, что ты придешь! Пройди, пожалуйста, небольшой опрос',
@@ -78,7 +78,7 @@ def on_click(message):
 
 
 def food(message):
-
+    # ЗАПОЛНЯЕМ таблицу в бд drinks + кнопки выбора еды
     if message.text == "Белое/красное вино":
         conn = sqlite3.connect('wed.sql')
         cur = conn.cursor()
@@ -175,6 +175,7 @@ def food(message):
 
 
 def db(message):
+    # ЗАПОЛНЯЕМ таблицу в бд food + меню
     if message.text == "Мясо":
         conn = sqlite3.connect('wed.sql')
         cur = conn.cursor()
@@ -219,9 +220,10 @@ def db(message):
 
 
 
+# раздел меню с инлайн кнопками
 @bot.callback_query_handler(func=lambda callback: True)
 def menu(callback):
-    if callback.data == "menu":
+    if callback.data == "menu": #вызов самого меню
         menu = types.InlineKeyboardMarkup()
         address = types.InlineKeyboardButton("Схема проезда", callback_data='address')
         menu.row(address)
@@ -233,7 +235,7 @@ def menu(callback):
         menu.row(music)
         bot.send_message(callback.message.chat.id, 'Выбери любую категорию ниже', reply_markup=menu)
 
-    elif callback.data == "address":
+    elif callback.data == "address": # адрес
         back = types.InlineKeyboardMarkup()
         backbtn = types.InlineKeyboardButton('Вернуться в меню', callback_data='menu')
         back.row(backbtn)
@@ -242,7 +244,7 @@ def menu(callback):
                          reply_markup=back)
 
 
-    elif callback.data == "dresscode":
+    elif callback.data == "dresscode": # дресскод (отправляет картинку с дресс-кодом)
         back = types.InlineKeyboardMarkup()
         backbtn = types.InlineKeyboardButton('Вернуться в меню', callback_data='menu')
         back.row(backbtn)
@@ -250,7 +252,7 @@ def menu(callback):
         bot.send_photo(callback.message.chat.id, pic, reply_markup=back)
 
 
-    elif callback.data == "timetable":
+    elif callback.data == "timetable": # отправляет картинку с расписанием
         back = types.InlineKeyboardMarkup()
         backbtn = types.InlineKeyboardButton('Вернуться в меню', callback_data='menu')
         back.row(backbtn)
@@ -258,7 +260,7 @@ def menu(callback):
         bot.send_photo(callback.message.chat.id, pic, reply_markup=back)
 
 
-    elif callback.data == "music":
+    elif callback.data == "music": # функция заказа музыки у диджея добавляется в бд и пересылается диджею
         markup = types.InlineKeyboardMarkup()
         btn1 = types.InlineKeyboardButton('Продолжить', callback_data='continue')
         markup.row(btn1)
@@ -267,14 +269,14 @@ def menu(callback):
         bot.send_message(callback.message.chat.id, "Нажми 'Продолжить', если ты хочешь заказать песню, которую хотел бы услышать на нашей свадьбе!\n Нажми 'Отменить', чтобы вернуться в меню",
                          reply_markup=markup)
 
-    elif callback.data == 'continue':
+    elif callback.data == 'continue': # функция заказа музыки у диджея после кнопки продолжить
         bot.send_message(callback.message.chat.id, "Напиши в ответном сообщении исполнителя и название песни⬇")
         bot.register_next_step_handler(callback.message, dbmusic)
 
 
 
 def dbmusic(message):
-    # ЗАПОЛНЯЕМ БД music
+    # ЗАПОЛНЯЕМ таблицу music
 
     conn = sqlite3.connect('wed.sql')
     cur = conn.cursor()
